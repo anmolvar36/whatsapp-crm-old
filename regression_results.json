@@ -1,0 +1,86 @@
+[
+  {
+    "category": "Auth",
+    "action": "ADMIN Login",
+    "status": true,
+    "details": ""
+  },
+  {
+    "category": "Auth",
+    "action": "MANAGER Login",
+    "status": true,
+    "details": ""
+  },
+  {
+    "category": "Auth",
+    "action": "COUNSELOR Login",
+    "status": true,
+    "details": ""
+  },
+  {
+    "category": "Lead",
+    "action": "Create Lead (Admin)",
+    "status": true,
+    "details": "ID: 128"
+  },
+  {
+    "category": "Lead",
+    "action": "Assign Lead (Manager)",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Lead",
+    "action": "Update Status (Counselor)",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Timeline",
+    "action": "Add Note",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Timeline",
+    "action": "Verify Timeline Integrity",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Follow-up",
+    "action": "Create Follow-up",
+    "status": false,
+    "details": "Request failed with status code 500"
+  },
+  {
+    "category": "Follow-up",
+    "action": "Complete Follow-up",
+    "status": false,
+    "details": "Request failed with status code 400"
+  },
+  {
+    "category": "Timeline",
+    "action": "Verify Follow-up Timeline Logs",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Reporting",
+    "action": "KPI Calculation & Response",
+    "status": false,
+    "details": "Request failed with status code 404"
+  },
+  {
+    "category": "Reporting",
+    "action": "Export Role Access (Counselor)",
+    "status": false,
+    "details": "Unexpected error: Request failed with status code 404"
+  },
+  {
+    "category": "Reporting",
+    "action": "Export Generation (CSV)",
+    "status": false,
+    "details": "Request failed with status code 404"
+  }
+]

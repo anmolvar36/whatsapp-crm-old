@@ -1,0 +1,613 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  menus       Menu[]
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model LeadStatus {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  color String? @default("#CBD5E1")
+  leads Lead[]
+
+  @@map("lead_statuses")
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  leadId    Int?
+  action    String
+  details   String?  @db.Text
+  timestamp DateTime @default(now())
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([leadId], map: "activities_leadId_fkey")
+  @@index([userId], map: "activities_userId_fkey")
+  @@map("activities")
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  password         String
+  roleId           Int               @default(1)
+  status           Status            @default(Active)
+  country          String?           @default("India")
+  team             String?           @default("General")
+  client           String?           @default("Global Entity")
+  assignedChannels Int?              @default(0)
+  permissions      String?           @db.LongText
+  refreshToken     String?           @db.Text
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  lastAssignedAt   DateTime?
+  activities       Activity[]
+  activityLogs     ActivityLog[]
+  calls            Call[]
+  counselorNotes   CounselorNote[]
+  leads            Lead[]            @relation("AssignedTo")
+  messageTemplates MessageTemplate[]
+  notifications    Notification[]
+  role             Role              @relation(fields: [roleId], references: [id])
+  sentMessages        Message[]               @relation("SentMessages")
+  leadAssignmentsBy   LeadAssignmentHistory[] @relation("AssignedByHistory")
+  leadAssignmentsTo   LeadAssignmentHistory[] @relation("AssignedToHistory")
+  leadAssignmentsPrev LeadAssignmentHistory[] @relation("PreviousOwnerHistory")
+  leadFollowups       LeadFollowup[]
+
+  @@index([roleId], map: "users_roleId_fkey")
+  @@map("users")
+}
+
+model Lead {
+  id             Int             @id @default(autoincrement())
+  name           String
+  country        String?
+  phone          String?
+  email          String?
+  program        String?
+  statusId       Int?
+  stage          String?         @default("New")
+  score          Int?            @default(0)
+  source         String?         @default("Website")
+  assignedTo     Int?
+  team           String?         @default("General")
+  priority       LeadPriority    @default(Medium)
+  followUpDate   DateTime?
+  branch         String?
+  leadType       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Academic Profile Fields (Phase-3)
+  currentAddress      String?         @db.Text
+  sscGpa              Decimal?        @db.Decimal(4, 2)
+  sscPassingYear      Int?
+  hscGpa              Decimal?        @db.Decimal(4, 2)
+  hscPassingYear      Int?
+  bachelorCgpa        Decimal?        @db.Decimal(4, 2)
+  bachelorPassingYear Int?
+  academicBackground  String?         @db.VarChar(255)
+  ieltsScore          Decimal?        @db.Decimal(3, 1)
+  moi                 String?         @db.VarChar(100)
+
+  activities     Activity[]
+  calls          Call[]
+  counselorNotes CounselorNote[]
+  assignedUser   User?           @relation("AssignedTo", fields: [assignedTo], references: [id])
+  status         LeadStatus?     @relation(fields: [statusId], references: [id])
+  messages       Message[]
+  assignmentHistory LeadAssignmentHistory[]
+  followups         LeadFollowup[]
+
+  @@index([assignedTo])
+  @@index([stage])
+  @@index([country])
+  @@index([statusId], map: "leads_statusId_fkey")
+  @@index([bachelorCgpa])
+  @@index([ieltsScore])
+  @@map("leads")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  leadId    Int
+  channel   String?
+  message   String   @db.Text
+  sender    String?
+  isRead    Boolean  @default(false)
+  timestamp DateTime @default(now())
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agentId   Int?
+  agent     User?    @relation("SentMessages", fields: [agentId], references: [id])
+
+  @@index([leadId], map: "messages_leadId_fkey")
+  @@map("messages")
+}
+
+model Call {
+  id          Int      @id @default(autoincrement())
+  leadId      Int
+  counselorId Int?
+  type        String?  @default("Outbound")
+  outcome     String?  @default("Pending")
+  callStatus  String   @default("Pending")
+  duration    Int?     @default(0)
+  notes       String?  @db.Text
+  date        String?
+  time        String?
+  createdAt   DateTime @default(now())
+  counselor   User?    @relation(fields: [counselorId], references: [id])
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([counselorId], map: "calls_counselorId_fkey")
+  @@index([leadId], map: "calls_leadId_fkey")
+  @@map("calls")
+}
+
+model CounselorNote {
+  id        Int      @id @default(autoincrement())
+  leadId    Int
+  authorId  Int
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([authorId], map: "counselor_notes_authorId_fkey")
+  @@index([leadId], map: "counselor_notes_leadId_fkey")
+  @@map("counselor_notes")
+}
+
+model Channel {
+  id           Int           @id @default(autoincrement())
+  name         String
+  number       String?
+  country      String?
+  webhook      String?
+  type         ChannelType
+  status       ChannelStatus @default(Active)
+  usage_count  Int?          @default(0)
+  lastActivity DateTime?
+  config       String?       @db.LongText
+  createdAt    DateTime      @default(now())
+
+  @@map("channels")
+}
+
+model MessageTemplate {
+  id             Int      @id @default(autoincrement())
+  name           String
+  content        String   @db.Text
+  category       String?
+  variable_count Int?     @default(0)
+  createdBy      Int?
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy], map: "message_templates_createdBy_fkey")
+  @@map("message_templates")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String   @db.Text
+  status    String   @default("Unread")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "notifications_userId_fkey")
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        Int            @id @default(autoincrement())
+  userId    Int?
+  action    String
+  module    String?
+  leads     String?
+  details   String?        @db.Text
+  status    ActivityStatus @default(Success)
+  ip        String?
+  device    String?
+  timestamp DateTime       @default(now())
+  user      User?          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("activity_logs")
+}
+
+model RoutingRule {
+  id        Int           @id @default(autoincrement())
+  name      String
+  team      String?
+  country   String?
+  counselor String?
+  type      RoutingType   @default(Round_Robin)
+  status    RoutingStatus @default(Active)
+  priority  Int?          @default(1)
+  createdAt DateTime      @default(now())
+
+  @@map("routing_rules")
+}
+
+model RolePermission {
+  id        Int      @id @default(autoincrement())
+  roleId    Int
+  module    String
+  canView   Boolean  @default(true)
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  createdAt DateTime @default(now())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module])
+  @@map("role_permissions")
+}
+
+model Integration {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  url       String?
+  apiKey    String?
+  status    Status   @default(Active)
+  createdAt DateTime @default(now())
+
+  @@map("integrations")
+}
+
+model Subscription {
+  id            Int                @id @default(autoincrement())
+  clientName    String
+  plan          String
+  status        SubscriptionStatus @default(Active)
+  renewalDate   DateTime?          @db.Date
+  messagesCount Int?               @default(0)
+  contactsCount Int?               @default(0)
+  createdAt     DateTime           @default(now())
+
+  @@map("subscriptions")
+}
+
+model AiConfig {
+  id           Int      @id @default(1)
+  flow         String?  @db.LongText
+  threshold    Int      @default(75)
+  enabled      Boolean  @default(true)
+  rules        String?  @db.LongText
+  scoringRules String?  @db.LongText
+  updatedAt    DateTime @updatedAt
+
+  @@map("ai_config")
+}
+
+model WorkingHours {
+  id        Int      @id @default(autoincrement())
+  day       String   @unique
+  active    Boolean  @default(true)
+  startTime String   @default("09:00")
+  endTime   String   @default("18:00")
+  updatedAt DateTime @updatedAt
+
+  @@map("working_hours")
+}
+
+model SecuritySetting {
+  id             Int      @id @default(1)
+  force2FA       Boolean  @default(true)
+  sessionTimeout String   @default("60 mins")
+  passwordExpiry String   @default("90 days")
+  updatedAt      DateTime @updatedAt
+
+  @@map("security_settings")
+}
+
+model SuperAdminDashboard {
+  id             Int      @id @default(autoincrement())
+  totalClients   Int      @default(0)
+  totalLeads     Int      @default(0)
+  totalRevenue   Float    @default(0)
+  activeChannels Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@map("super_admin_dashboard")
+}
+
+model AdminDashboard {
+  id                Int      @id @default(autoincrement())
+  connectedWhatsapp Int      @default(0)
+  facebookPages     Int      @default(0)
+  websiteLeads      Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@map("admin_dashboard")
+}
+
+model ManagerDashboard {
+  id             Int      @id @default(autoincrement())
+  leadsToday     Int      @default(0)
+  qualifiedLeads Int      @default(0)
+  convertedLeads Int      @default(0)
+  enrolledLeads  Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@map("manager_dashboard")
+}
+
+model TeamLeaderDashboard {
+  id             Int      @id @default(autoincrement())
+  teamLeads      Int      @default(0)
+  pendingReplies Int      @default(0)
+  slaBreaches    Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@map("team_leader_dashboard")
+}
+
+model CounselorPerformance {
+  id            Int      @id @default(autoincrement())
+  counselorName String
+  replies       Int      @default(0)
+  conversions   Int      @default(0)
+  avgResponse   String   @default("0m")
+  createdAt     DateTime @default(now())
+
+  @@map("counselor_performance")
+}
+
+model CounselorDashboard {
+  id            Int      @id @default(autoincrement())
+  assignedLeads Int      @default(0)
+  followUps     Int      @default(0)
+  stageUpdates  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@map("counselor_dashboard")
+}
+
+model SupportDashboard {
+  id            Int      @id @default(autoincrement())
+  openTickets   Int      @default(0)
+  newMessages   Int      @default(0)
+  assignedChats Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@map("support_dashboard")
+}
+
+model Template {
+  id          Int      @id @default(autoincrement())
+  publicId    String   @unique(map: "Template_publicId_key") @default(cuid())
+  name        String
+  type        String   @default("Daily")
+  tasks       Int      @default(0)
+  duration    String
+  description String?  @default("")
+  taskList    String?  @db.LongText
+  createdBy   String   @default("System")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("template")
+}
+
+model Rota {
+  id          Int      @id @default(autoincrement())
+  publicId    String   @unique @default(cuid())
+  date        String
+  teamMember  String
+  serviceUser String
+  shiftTime   String
+  shiftStart  String
+  shiftEnd    String
+  location    String   @default("")
+  notes       String?  @default("")
+  status      String   @default("Scheduled")
+  createdBy   String   @default("System")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("rota")
+}
+
+model Menu {
+  id        Int       @id @default(autoincrement())
+  label     String
+  icon      String
+  path      String?
+  roleId    Int       @default(1)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  submenus  Submenu[]
+
+  @@index([roleId], map: "Menu_roleId_fkey")
+  @@map("menu")
+}
+
+model Submenu {
+  id        Int      @id @default(autoincrement())
+  label     String
+  path      String
+  menuId    Int
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@index([menuId], map: "Submenu_menuId_fkey")
+  @@map("submenu")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  email     String?  @unique
+  source    String?
+  status    String?  @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+model WhatsappMessage {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  message   String   @db.Text
+  status    String   @default("Sent")
+  createdAt DateTime @default(now())
+
+  @@map("whatsapp_messages")
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  status      String    @default("Pending")
+  priority    String    @default("Medium")
+  dueDate     DateTime?
+  assignedTo  Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("tasks")
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  data      String?  @db.LongText
+  createdBy Int?
+  createdAt DateTime @default(now())
+
+  @@map("reports")
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  group     String?  @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+enum Status {
+  Active
+  Inactive
+}
+
+enum LeadPriority {
+  Low
+  Medium
+  High
+}
+
+enum ActivityStatus {
+  Success
+  Failed
+}
+
+enum ChannelType {
+  WhatsApp
+  Facebook
+  Website
+  Instagram
+  Telegram
+}
+
+enum ChannelStatus {
+  Active
+  Inactive
+  Error
+}
+
+enum SubscriptionStatus {
+  Active
+  Expired
+  Suspended
+}
+
+enum RoutingType {
+  Country_Based @map("Country Based")
+  Round_Robin   @map("Round Robin")
+  Load_Based    @map("Load Based")
+  Weightage
+  Direct
+}
+
+enum RoutingStatus {
+  Active
+  Paused
+}
+
+model LeadAssignmentHistory {
+  id              Int      @id @default(autoincrement())
+  leadId          Int
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedById    Int?
+  assignedBy      User?    @relation("AssignedByHistory", fields: [assignedById], references: [id], onDelete: SetNull)
+  assignedToId    Int
+  assignedTo      User     @relation("AssignedToHistory", fields: [assignedToId], references: [id], onDelete: Cascade)
+  previousOwnerId Int?
+  previousOwner   User?    @relation("PreviousOwnerHistory", fields: [previousOwnerId], references: [id], onDelete: SetNull)
+  assignedAt      DateTime @default(now())
+
+  @@index([leadId], map: "lead_assignment_history_leadId_fkey")
+  @@map("lead_assignment_history")
+}
+
+model LeadFollowup {
+  id                Int            @id @default(autoincrement())
+  leadId            Int
+  lead              Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  counselorId       Int
+  counselor         User           @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  scheduledTime     DateTime
+  status            FollowupStatus @default(Pending)
+  notes             String?        @db.Text
+  completedAt       DateTime?
+  rescheduledFromId Int?
+  rescheduledFrom   LeadFollowup?  @relation("RescheduleHistory", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
+  rescheduledTo     LeadFollowup[] @relation("RescheduleHistory")
+  createdAt         DateTime       @default(now())
+
+  @@index([counselorId], map: "lead_followups_counselorId_fkey")
+  @@index([status, scheduledTime], map: "idx_followup_status_time")
+  @@map("lead_followups")
+}
+
+enum FollowupStatus {
+  Pending
+  Completed
+  Missed
+  Cancelled
+  Rescheduled
+}

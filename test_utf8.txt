@@ -1,0 +1,29 @@
+﻿Query where: {
+  "lead": {
+    "country": "GERMANY",
+    "stage": "Enrolled"
+  }
+}
+Notes found with filters: 0
+Total notes in DB: 3
+Notes with null leads: 0
+Leads in Germany: 3
+Leads Enrolled: 0
+Countries in DB: [
+  { _count: { id: 1 }, country: null },
+  { _count: { id: 3 }, country: 'Australia' },
+  { _count: { id: 3 }, country: 'Brazil' },
+  { _count: { id: 3 }, country: 'Canada' },
+  { _count: { id: 4 }, country: 'France' },
+  { _count: { id: 3 }, country: 'Germany' },
+  { _count: { id: 4 }, country: 'India' },
+  { _count: { id: 3 }, country: 'Italy' },
+  { _count: { id: 3 }, country: 'Japan' },
+  { _count: { id: 3 }, country: 'Mexico' },
+  { _count: { id: 3 }, country: 'Nigeria' },
+  { _count: { id: 3 }, country: 'Saudi Arabia' },
+  { _count: { id: 3 }, country: 'Spain' },
+  { _count: { id: 4 }, country: 'UAE' },
+  { _count: { id: 4 }, country: 'UK' },
+  { _count: { id: 4 }, country: 'USA' }
+]
