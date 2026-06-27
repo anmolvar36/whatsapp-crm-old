@@ -35,7 +35,8 @@ app.use(cors({
     origin: [
         process.env.FRONTEND_URL,
         'http://localhost:3000',
-        'https://whatsapp-crm.kiaantechnology.com'
+        'https://whatsapp-crm.kiaantechnology.com',
+        'https://whaatsapp-crm-old.netlify.app'
     ].filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
